@@ -1,0 +1,31 @@
+rules_version = '2';
+
+// Mesmo database Firestore do app (firebase-applet-config.json → firestoreDatabaseId)
+service firebase.storage {
+  match /b/{bucket}/o {
+    function staffManagerOrAdmin() {
+      return request.auth != null && (
+        (request.auth.token.email_verified == true && request.auth.token.email in [
+          'pedrohardsolu2025@gmail.com',
+          'bsr.salvador2022@gmail.com',
+          'harddisk1911@gmail.com',
+          'petiscapeixe@gmail.com'
+        ]) || (
+          firestore.exists(/databases/ai-studio-65ec1638-064b-465f-9aab-58747769821f/documents/users/$(request.auth.uid)) &&
+          firestore.get(/databases/ai-studio-65ec1638-064b-465f-9aab-58747769821f/documents/users/$(request.auth.uid)).data.role in ['admin', 'manager']
+        )
+      );
+    }
+
+    match /product-images/{productId}/{fileName} {
+      allow read: if true;
+      allow create: if staffManagerOrAdmin()
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow update: if staffManagerOrAdmin()
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if staffManagerOrAdmin();
+    }
+  }
+}
